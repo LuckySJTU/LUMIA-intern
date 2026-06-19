@@ -1,0 +1,38 @@
+# Python/runtime cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Local virtualenvs
+.venv/
+venv/
+env/
+
+# Intern runtime state and logs
+root/
+llm_intern_logs/
+.feishu_registry/
+.intern_sessions.json
+.intern_sessions.lock
+.hook_state.json
+.hook_state.lock
+.feishu_daemon.pid
+
+# Local secrets/auth
+key.txt
+.codex/
+.claude/
+.agents/
+.env
+.envrc
+enterprise/
+
+# OS/editor noise
+.DS_Store
+.idea/
+.vscode/
+
+# Keep empty metadata directories
+!workspace/interns/.gitkeep
+!workspace/tasks/.gitkeep

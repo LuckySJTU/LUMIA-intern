@@ -1,0 +1,9 @@
+# 飞书 App 凭据（不要提交到 git）
+# 第 1 行: app_id
+# 第 2 行: app_secret
+# 
+# 使用方法：
+#   cp feishu_key.txt.example feishu_key.txt
+#   然后填入真实的 app_id 和 app_secret
+cli_xxxxxxxx
+your_app_secret_here

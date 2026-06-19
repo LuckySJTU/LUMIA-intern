@@ -1,0 +1,68 @@
+# Codex CLI hooks 配置模板（intern_agent_helper 部署）
+#
+# 部署位置：${WORK_AGENTS_ROOT}/.github/codex_settings.toml
+# 引用方式：每个 intern 的 ${INTERN_DIR}/.codex/config.toml 是符号链接到此文件。
+#
+# 与 Claude Code 的差异（task193 重核 2026-04-30，Codex CLI 0.125.0）：
+# - Codex hook 系统硬编码只支持 6 个 event 名（PreToolUse/PermissionRequest/PostToolUse/SessionStart/UserPromptSubmit/Stop），
+#   见 codex-rs/hooks/src/lib.rs:11-18 HOOK_EVENT_NAMES。SubagentStart/SubagentStop/PreCompact 配置段会被静默丢弃
+# - 通过 PreToolUse matcher="spawn_agent" + PostToolUse matcher="wait" 实现 Subagent 生命周期
+#   等价触发（dispatch 到 codex_subagent_dispatch.py）；Codex Feature::Collab 默认启用，
+#   spawn_agent / wait 工具默认可用
+# - PreCompact 在本地 CLI 无任何触发点（/compact 走 Op::Compact 直调 compact()，
+#   handlers.rs:1124，绕过 UserPromptSubmit；auto compact 同 inline）。known limitation
+# - Codex 项目配置仅在 ~/.codex/config.toml 中标记 trust_level="trusted" 后才加载
+# - intern_start_codex.sh 会注入 trust_level 配置，并同步 0.129+ 的 hook trusted_hash
+
+[features]
+# Codex 0.129+ 使用 hooks；旧版 hook feature 名在 0.130 会触发 deprecation warning。
+hooks = true
+# task210：让 Default mode 也能用 request_user_input（默认仅 Plan mode 可用）。
+# Codex 内部仍标 under development（codex features list），需重核版本兼容。
+default_mode_request_user_input = true
+
+[[hooks.SessionStart]]
+
+[[hooks.SessionStart.hooks]]
+type = "command"
+command = """bash -c 'S=$WORK_AGENTS_ROOT/.github/hooks/session_start_hook.py; [ -f "$S" ] || exit 0; exec python3 "$S"'"""
+
+[[hooks.UserPromptSubmit]]
+
+[[hooks.UserPromptSubmit.hooks]]
+type = "command"
+command = """bash -c 'S=$WORK_AGENTS_ROOT/.github/hooks/user_prompt_hook.py; [ -f "$S" ] || exit 0; exec python3 "$S"'"""
+
+[[hooks.PreToolUse]]
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = """bash -c 'S=$WORK_AGENTS_ROOT/.github/hooks/pre_tool_hook.py; [ -f "$S" ] || exit 0; exec python3 "$S"'"""
+
+# SubagentStart 等价触发：spawn_agent 工具被调用前
+[[hooks.PreToolUse]]
+matcher = "spawn_agent"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = """bash -c 'S=$WORK_AGENTS_ROOT/.github/hooks/codex_subagent_dispatch.py; [ -f "$S" ] || exit 0; exec python3 "$S" start'"""
+
+[[hooks.PostToolUse]]
+
+[[hooks.PostToolUse.hooks]]
+type = "command"
+command = """bash -c 'S=$WORK_AGENTS_ROOT/.github/hooks/post_tool_hook.py; [ -f "$S" ] || exit 0; exec python3 "$S"'"""
+
+# SubagentStop 等价触发：wait 工具返回（已等到子 agent 终态 DONE/FAILED）
+[[hooks.PostToolUse]]
+matcher = "wait"
+
+[[hooks.PostToolUse.hooks]]
+type = "command"
+command = """bash -c 'S=$WORK_AGENTS_ROOT/.github/hooks/codex_subagent_dispatch.py; [ -f "$S" ] || exit 0; exec python3 "$S" stop'"""
+
+[[hooks.Stop]]
+
+[[hooks.Stop.hooks]]
+type = "command"
+command = """bash -c 'S=$WORK_AGENTS_ROOT/.github/hooks/stop_hook.py; [ -f "$S" ] || exit 0; exec python3 "$S"'"""

@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)", "Bash(ls:*)", "Bash(find:*)", "Bash(grep:*)",
+      "Bash(head:*)", "Bash(tail:*)", "Bash(wc:*)", "Bash(echo:*)",
+      "Bash(pwd:*)", "Bash(mkdir:*)", "Bash(cp:*)", "Bash(mv:*)",
+      "Bash(touch:*)", "Bash(cd:*)", "Bash(git:*)", "Bash(python3:*)",
+      "Bash(npm:*)", "Bash(node:*)", "Bash(gh:*)", "Bash(sed:*)",
+      "Bash(awk:*)", "Bash(sort:*)", "Bash(uniq:*)", "Bash(diff:*)",
+      "Bash(tar:*)", "Read", "Write", "Edit", "MultiEdit", "Glob", "Grep",
+      "TodoRead", "TodoWrite", "Agent", "WebFetch", "WebSearch",
+      "Bash(rm:*)", "Bash(chmod:*)", "Bash(curl:*)", "Bash(wget:*)",
+      "Bash(date:*)", "Bash(whoami:*)", "Bash(id:*)", "Bash(env:*)",
+      "Bash(export:*)", "Bash(source:*)", "Bash(tee:*)", "Bash(xargs:*)",
+      "Bash(tr:*)", "Bash(cut:*)", "Bash(stat:*)", "Bash(pip:*)",
+      "Bash(pip3:*)", "Bash(pytest:*)", "Bash(rg:*)", "Bash(tmux:*)",
+      "Bash(which:*)", "Bash(command:*)", "Bash(readlink:*)", "Bash(realpath:*)",
+      "Bash(dirname:*)", "Bash(basename:*)", "Bash(ps:*)", "Bash(kill:*)",
+      "Bash(pkill:*)", "Bash(npx:*)", "Bash(pnpm:*)", "Bash(unzip:*)",
+      "Bash(zip:*)", "Bash(sleep:*)", "Bash(sh:*)", "Bash(bash:*)", "Bash(ln:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [{"matcher": "", "hooks": [{"type": "command", "command": "bash -c 'S=$WORK_AGENTS_ROOT/.github/hooks/session_start_hook.py; [ -f \"$S\" ] || exit 0; exec python3 \"$S\"'"}]}],
+    "UserPromptSubmit": [{"matcher": "", "hooks": [{"type": "command", "command": "bash -c 'S=$WORK_AGENTS_ROOT/.github/hooks/user_prompt_hook.py; [ -f \"$S\" ] || exit 0; exec python3 \"$S\"'"}]}],
+    "PreToolUse": [{"matcher": "", "hooks": [{"type": "command", "command": "bash -c 'S=$WORK_AGENTS_ROOT/.github/hooks/pre_tool_hook.py; [ -f \"$S\" ] || exit 0; exec python3 \"$S\"'", "timeout": 21600}]}],
+    "PostToolUse": [{"matcher": "", "hooks": [{"type": "command", "command": "bash -c 'S=$WORK_AGENTS_ROOT/.github/hooks/post_tool_hook.py; [ -f \"$S\" ] || exit 0; exec python3 \"$S\"'"}]}],
+    "SubagentStart": [{"matcher": "", "hooks": [{"type": "command", "command": "bash -c 'S=$WORK_AGENTS_ROOT/.github/hooks/subagent_start_hook.py; [ -f \"$S\" ] || exit 0; exec python3 \"$S\"'"}]}],
+    "SubagentStop": [{"matcher": "", "hooks": [{"type": "command", "command": "bash -c 'S=$WORK_AGENTS_ROOT/.github/hooks/subagent_stop_hook.py; [ -f \"$S\" ] || exit 0; exec python3 \"$S\"'"}]}],
+    "PreCompact": [{"matcher": "", "hooks": [{"type": "command", "command": "bash -c 'S=$WORK_AGENTS_ROOT/.github/hooks/pre_compact_hook.py; [ -f \"$S\" ] || exit 0; exec python3 \"$S\"'"}]}],
+    "Stop": [{"matcher": "", "hooks": [{"type": "command", "command": "bash -c 'S=$WORK_AGENTS_ROOT/.github/hooks/stop_hook.py; [ -f \"$S\" ] || exit 0; exec python3 \"$S\"'"}]}]
+  }
+}

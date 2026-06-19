@@ -1,0 +1,4 @@
+# Override root .gitignore — we need intern-cli/lib/ tracked
+!lib/
+__pycache__/
+.pytest_cache/

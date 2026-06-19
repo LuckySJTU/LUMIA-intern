@@ -1,0 +1,11 @@
+# LUMIA Intern Project Rules
+
+These rules apply to all interns running in this user fork.
+
+1. This repo is the user's own fork/clone. Intern-generated code and metadata changes should be committed here and pushed to the user's remote.
+2. Intern metadata lives under `workspace/interns/<intern_name>/`. The bootstrap script creates this directory when a new intern is started.
+3. Task notes, when needed, live under `workspace/tasks/<task_id>/`.
+4. Do not commit local runtime state or secrets: `key.txt`, `.feishu_registry/`, `.codex/`, `.agents/`, `llm_intern_logs/`, `root/`, `.intern_sessions.json`, or `enterprise/`.
+5. Codex auth is per user and must be configured locally by that user.
+6. The relay is shared infrastructure. Users run only their local daemon; relay deployment/restart is an administrator operation.
+7. When asking the user to choose via `request_user_input`, include all decision context in the question text and option descriptions.

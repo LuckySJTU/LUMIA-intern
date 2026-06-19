@@ -1,0 +1,5 @@
+# 真实密钥不提交
+feishu_key.txt
+
+# Registry 数据（运行时生成）
+feishu_registry/
