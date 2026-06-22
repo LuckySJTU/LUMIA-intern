@@ -2184,7 +2184,7 @@ def load_relay_config():
         "relay_url": relay_url,
         "relay_http_url": relay_http_url,
         "relay_token": relay_token,
-        "machine_id": _build_instance_id(),
+        "machine_id": str(owner.get("machine_id") or _build_instance_id(owner)),
         "owner_mobile": owner.get("mobile", ""),
         "owner_open_id": owner.get("owner_open_id") or owner.get("open_id") or "",
         "ip": local_ip,
@@ -2263,18 +2263,32 @@ def enrich_owner_identity_at_startup(api):
     return True
 
 
-def _build_instance_id():
-    """Globally unique identifier for THIS daemon = hostname:ssh_port.
+def _machine_id_part(value, fallback="unknown"):
+    value = str(value or "").strip().lower()
+    value = re.sub(r"[^a-z0-9_.:-]+", "_", value).strip("_")
+    return value or fallback
 
-    Multiple dockers on the same physical host that share host network namespace
-    will all return the same hostname (e.g. 'dev4infer'), so we MUST disambiguate
-    by SSH port — each docker is reachable on its own SSH port (the user's entry).
+
+def _short_hash(value):
+    return hashlib.sha1(str(value or "").encode("utf-8")).hexdigest()[:10]
+
+
+def _build_instance_id(owner=None):
+    """Globally unique identifier for this user-side daemon.
+
+    Relay connections are keyed by machine_id. A physical-host id such as
+    hostname:ssh_port is not enough on shared servers because multiple users can
+    run their own daemon through the same host and SSH port. Scope the default
+    id by local user, WORK_AGENTS_ROOT, and the configured Feishu owner identity.
 
     SSH port resolution order:
       1) FEISHU_INSTANCE_SSH_PORT env (extension-injected at spawn)
       2) parse from SSH_CONNECTION env (if daemon was started inside an SSH session)
       3) fallback '22'
     """
+    explicit = os.environ.get("FEISHU_INSTANCE_ID")
+    if explicit:
+        return _machine_id_part(explicit)
     hostname = socket.gethostname()
     ssh_port = os.environ.get("FEISHU_INSTANCE_SSH_PORT")
     if not ssh_port:
@@ -2285,7 +2299,18 @@ def _build_instance_id():
                 ssh_port = parts[3]
     if not ssh_port:
         ssh_port = "22"
-    return f"{hostname}:{ssh_port}"
+    user = os.environ.get("USER") or os.environ.get("LOGNAME") or str(os.getuid() if hasattr(os, "getuid") else "nouid")
+    root_hash = _short_hash(os.path.abspath(WORK_AGENTS_ROOT))
+    owner = owner if isinstance(owner, dict) else {}
+    owner_key = owner.get("owner_open_id") or owner.get("open_id") or owner.get("mobile") or ""
+    owner_hash = _short_hash(owner_key) if owner_key else "noowner"
+    return ":".join([
+        _machine_id_part(hostname, "host"),
+        _machine_id_part(ssh_port, "22"),
+        _machine_id_part(user, "user"),
+        root_hash,
+        owner_hash,
+    ])
 
 
 class RelayClient:

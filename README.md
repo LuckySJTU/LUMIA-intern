@@ -57,7 +57,7 @@ The script will:
 7. Create and push `workspace/interns/<intern_name>/` metadata.
 8. Start Codex in tmux session `<intern_name>`.
 
-Daemon discovery is scoped by Linux/macOS uid plus `WORK_AGENTS_ROOT`, so two users on the same machine do not share the same local daemon address file unless `FEISHU_DAEMON_ADDR_FILE` is explicitly set to the same path.
+Daemon discovery is scoped by Linux/macOS uid plus `WORK_AGENTS_ROOT`, so two users on the same machine do not share the same local daemon address file unless `FEISHU_DAEMON_ADDR_FILE` is explicitly set to the same path. Relay identity is also generated from host, SSH port, local user, `WORK_AGENTS_ROOT`, and the configured Feishu owner identity, so two user daemons on the same host do not replace each other's relay connection.
 
 If the administrator has provided a fixed public relay URL, you can avoid typing it each time:
 
