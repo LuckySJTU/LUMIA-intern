@@ -47,6 +47,23 @@ _resolve_python() {
 PYTHON="$(_resolve_python)" || { echo "[ERROR] No Python 3 interpreter found. Install python3 or activate a conda env first." >&2; exit 1; }
 export PYTHON
 
+_default_daemon_addr_file() {
+    "${PYTHON}" - "${WORK_ROOT}" <<'PY'
+import hashlib
+import os
+import sys
+
+root = os.path.abspath(sys.argv[1])
+uid = os.getuid() if hasattr(os, "getuid") else 0
+digest = hashlib.sha1(root.encode("utf-8")).hexdigest()[:12]
+print(f"/tmp/feishu_daemon_{uid}_{digest}.json")
+PY
+}
+
+if [[ -z "${FEISHU_DAEMON_ADDR_FILE:-}" ]]; then
+    export FEISHU_DAEMON_ADDR_FILE="$(_default_daemon_addr_file)"
+fi
+
 # ── 颜色 ──────────────────────────────────────
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -104,7 +121,7 @@ ensure_feishu_group() {
     local intern_type="$2"
     local project_name="${3:-}"
     local workspace_id="${4:-}"
-    local daemon_addr="${FEISHU_DAEMON_ADDR_FILE:-/tmp/feishu_daemon.json}"
+    local daemon_addr="${FEISHU_DAEMON_ADDR_FILE}"
 
     if [[ ! -f "${daemon_addr}" ]]; then
         die "Feishu daemon address file not found: ${daemon_addr}"
@@ -615,7 +632,7 @@ with open(path + ".tmp", "w", encoding="utf-8") as f:
 os.replace(path + ".tmp", path)
 PY
 
-DAEMON_ADDR_FILE="${FEISHU_DAEMON_ADDR_FILE:-/tmp/feishu_daemon.json}"
+DAEMON_ADDR_FILE="${FEISHU_DAEMON_ADDR_FILE}"
 DAEMON_HTTP_PORT="$("${PYTHON}" - "${DAEMON_ADDR_FILE}" <<'PY' 2>/dev/null || true
 import json
 import sys
@@ -692,11 +709,11 @@ tmux send-keys -t "=${INTERN_NAME}:" "set -a; [ -f \"${WORK_ROOT}/enterprise/use
 tmux send-keys -t "=${INTERN_NAME}:" "export INTERN_DIR=\"${INTERN_DIR}\"" Enter
 tmux send-keys -t "=${INTERN_NAME}:" "export PROJECT_REPO=\"${INTERN_REPO}\"" Enter
 tmux send-keys -t "=${INTERN_NAME}:" "export WORK_AGENTS_ROOT=\"${WORK_ROOT}\"" Enter
-tmux send-keys -t "=${INTERN_NAME}:" "export FEISHU_DAEMON_ADDR_FILE=\"${FEISHU_DAEMON_ADDR_FILE:-/tmp/feishu_daemon.json}\"" Enter
+tmux send-keys -t "=${INTERN_NAME}:" "export FEISHU_DAEMON_ADDR_FILE=\"${FEISHU_DAEMON_ADDR_FILE}\"" Enter
 tmux set-environment -t "=${INTERN_NAME}" INTERN_DIR "${INTERN_DIR}"
 tmux set-environment -t "=${INTERN_NAME}" PROJECT_REPO "${INTERN_REPO}"
 tmux set-environment -t "=${INTERN_NAME}" WORK_AGENTS_ROOT "${WORK_ROOT}"
-tmux set-environment -t "=${INTERN_NAME}" FEISHU_DAEMON_ADDR_FILE "${FEISHU_DAEMON_ADDR_FILE:-/tmp/feishu_daemon.json}"
+tmux set-environment -t "=${INTERN_NAME}" FEISHU_DAEMON_ADDR_FILE "${FEISHU_DAEMON_ADDR_FILE}"
 tmux set-environment -t "=${INTERN_NAME}" INTERN_SHARED_REPO "${SHARED_REPO}"
 tmux set-environment -t "=${INTERN_NAME}" CODEX_SETTINGS_MTIME "${SETTINGS_MTIME}"
 if [[ "${CODEX_LB_ENABLED}" -eq 1 ]]; then

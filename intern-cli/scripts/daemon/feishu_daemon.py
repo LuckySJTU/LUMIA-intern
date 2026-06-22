@@ -13,7 +13,8 @@ Feishu Daemon — 全功能飞书服务端
 启动：插件 activate 时自动后台启动
 停止：POST /api/shutdown 或 SIGTERM
 
-PID file: /tmp/feishu_daemon.json (JSON: pid/instance_id/work_agents_root/http_port/ws_port/started_at/script_hash/version/bundle_dir)
+PID file: FEISHU_DAEMON_ADDR_FILE, or a per-user/work-root file under /tmp
+(JSON: pid/instance_id/work_agents_root/http_port/ws_port/started_at/script_hash/version/bundle_dir)
 """
 
 __version__ = "1.0.0"
@@ -71,7 +72,17 @@ WORK_AGENTS_ROOT = os.environ.get("WORK_AGENTS_ROOT") or os.getcwd()
 # Actual ports are written to PID_FILE after bind, and read by hooks/CLI/extension.
 HTTP_PORT = int(os.environ.get("FEISHU_HTTP_PORT", "0"))
 WS_PORT = int(os.environ.get("FEISHU_WS_PORT", "0"))
-PID_FILE = "/tmp/feishu_daemon.json"
+
+
+def _default_pid_file(work_root):
+    root = os.path.abspath(work_root or os.getcwd())
+    getuid = getattr(os, "getuid", None)
+    uid = int(getuid()) if callable(getuid) else 0
+    digest = hashlib.sha1(root.encode("utf-8")).hexdigest()[:12]
+    return f"/tmp/feishu_daemon_{uid}_{digest}.json"
+
+
+PID_FILE = os.environ.get("FEISHU_DAEMON_ADDR_FILE") or _default_pid_file(WORK_AGENTS_ROOT)
 OLD_PID_FILE = os.path.join(WORK_AGENTS_ROOT, ".feishu_daemon.pid")  # legacy, unlinked on startup
 LOG_DIR = os.path.join(WORK_AGENTS_ROOT, "llm_intern_logs", "_daemon")
 LOG_FILE = os.path.join(LOG_DIR, "feishu_daemon.log")

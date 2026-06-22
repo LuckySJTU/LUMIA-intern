@@ -787,7 +787,18 @@ def _role_specific_context_en(f):
 # task213/267/320: daemon ↔ extension 共享的 PID file。daemon 启动时写
 # http_port/ws_port/bundle_dir 等字段；context_loader 在每次 UPS 注入 peer/goal
 # endpoint URL + builtin doc 路径到 system prompt 末尾。常量化便于单测 monkeypatch。
-PEER_DAEMON_PID_FILE = "/tmp/feishu_daemon.json"
+def _default_peer_daemon_pid_file():
+    import hashlib
+    import os as _os
+
+    root = _os.path.abspath(_os.environ.get("WORK_AGENTS_ROOT") or _os.getcwd())
+    getuid = getattr(_os, "getuid", None)
+    uid = int(getuid()) if callable(getuid) else 0
+    digest = hashlib.sha1(root.encode("utf-8")).hexdigest()[:12]
+    return f"/tmp/feishu_daemon_{uid}_{digest}.json"
+
+
+PEER_DAEMON_PID_FILE = os.environ.get("FEISHU_DAEMON_ADDR_FILE") or _default_peer_daemon_pid_file()
 
 
 def _resolve_builtin_doc_ref(repo, role="independent"):

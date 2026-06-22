@@ -17,6 +17,7 @@ import sys
 import urllib.request
 from urllib.parse import parse_qsl, quote, urlencode, urlparse
 
+from lib.daemon_addr import daemon_addr_file
 from lib.enterprise_policy import (
     POLICY_SCHEMA,
     POLICY_STATES,
@@ -32,7 +33,6 @@ from lib.enterprise_policy import (
 )
 
 REPORT_SCHEMA = "intern-agents.enterprise-setup-report.v1"
-DAEMON_PID_FILE = Path("/tmp/feishu_daemon.json")
 FEISHU_RUNTIME_EVENTS = ["im.message.receive_v1", "card.action.trigger"]
 BOOTSTRAP_POLICY_DEPLOYMENT_ID = "local-bootstrap"
 BUILTIN_USER_BOOTSTRAP_POLICY_PATH = "<builtin:user-bootstrap>"
@@ -1038,7 +1038,8 @@ class EnterpriseSetupEngine:
         ]
 
     def _daemon_check(self, *, deep: bool) -> SetupCheck:
-        if not DAEMON_PID_FILE.exists():
+        daemon_pid_file = Path(daemon_addr_file(self.work_root))
+        if not daemon_pid_file.exists():
             return SetupCheck(
                 "daemon.status",
                 "daemon",
@@ -1054,7 +1055,7 @@ class EnterpriseSetupEngine:
                 "Reload VS Code after setup is ready.",
             )
         try:
-            info = json.loads(DAEMON_PID_FILE.read_text(encoding="utf-8"))
+            info = json.loads(daemon_pid_file.read_text(encoding="utf-8"))
         except Exception as exc:
             return self._plain_check(
                 "daemon.status",
@@ -1064,7 +1065,7 @@ class EnterpriseSetupEngine:
                 False,
                 "DAEMON_PID_INVALID",
                 str(exc),
-                f"Remove stale {DAEMON_PID_FILE} and restart daemon.",
+                f"Remove stale {daemon_pid_file} and restart daemon.",
             )
         port = info.get("http_port")
         if not deep:

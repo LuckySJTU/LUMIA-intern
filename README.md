@@ -53,9 +53,11 @@ The script will:
 3. Create a project id named `<username>_project`.
 4. Check git read/push access.
 5. Configure relay connection under `$HOME/.feishu_registry/_owner.json`.
-6. Start or reuse the local daemon.
+6. Start or reuse the local daemon for this user and `WORK_AGENTS_ROOT`.
 7. Create and push `workspace/interns/<intern_name>/` metadata.
 8. Start Codex in tmux session `<intern_name>`.
+
+Daemon discovery is scoped by Linux/macOS uid plus `WORK_AGENTS_ROOT`, so two users on the same machine do not share the same local daemon address file unless `FEISHU_DAEMON_ADDR_FILE` is explicitly set to the same path.
 
 If the administrator has provided a fixed public relay URL, you can avoid typing it each time:
 

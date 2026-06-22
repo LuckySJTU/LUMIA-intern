@@ -12,9 +12,10 @@ import urllib.request
 from pathlib import Path
 
 from lib.cli_contract import ensure_cli_report_contract
+from lib.daemon_addr import daemon_addr_file
 
 
-PID_FILE = os.environ.get("FEISHU_DAEMON_ADDR_FILE") or "/tmp/feishu_daemon.json"
+PID_FILE = daemon_addr_file()
 
 
 def setup_parser(subparsers: argparse._SubParsersAction) -> None:  # type: ignore[type-arg]

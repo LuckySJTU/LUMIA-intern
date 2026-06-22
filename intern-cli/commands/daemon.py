@@ -12,10 +12,12 @@ import sys
 import time
 import urllib.request
 
+from lib.daemon_addr import daemon_addr_file
 from lib.user_env import load_enterprise_user_env
 
 
-PID_FILE = Path("/tmp/feishu_daemon.json")
+def _pid_file(root: str | None = None) -> Path:
+    return Path(daemon_addr_file(root))
 
 
 def setup_parser(subparsers: argparse._SubParsersAction) -> None:
@@ -59,9 +61,9 @@ def _python_executable(env: dict[str, str]) -> str:
     return env.get("PYTHON") or sys.executable or "python3"
 
 
-def _pid_payload() -> dict:
+def _pid_payload(root: str | None = None) -> dict:
     try:
-        return json.loads(PID_FILE.read_text(encoding="utf-8"))
+        return json.loads(_pid_file(root).read_text(encoding="utf-8"))
     except Exception:
         return {}
 
@@ -90,8 +92,9 @@ def _http_status(payload: dict, timeout: float = 3.0) -> tuple[bool, dict, str |
         return False, {}, str(exc)
 
 
-def _status_payload() -> dict:
-    payload = _pid_payload()
+def _status_payload(root: str | None = None) -> dict:
+    pid_file = _pid_file(root)
+    payload = _pid_payload(root)
     pid = int(payload.get("pid") or 0)
     running = bool(pid and _pid_is_running(pid))
     http_ok, http_payload, http_error = _http_status(payload)
@@ -101,7 +104,7 @@ def _status_payload() -> dict:
         "schema": "intern-agents.daemon-status.v1",
         "running": running,
         "pid": pid or None,
-        "pid_file": str(PID_FILE),
+        "pid_file": str(pid_file),
         "work_agents_root": payload.get("work_agents_root") or "",
         "http_port": payload.get("http_port"),
         "ws_port": payload.get("ws_port"),
@@ -112,8 +115,8 @@ def _status_payload() -> dict:
     return result
 
 
-def _print_status(json_output: bool) -> int:
-    status = _status_payload()
+def _print_status(json_output: bool, root: str | None = None) -> int:
+    status = _status_payload(root)
     if json_output:
         print(json.dumps(status, ensure_ascii=False, indent=2))
     else:
@@ -131,13 +134,15 @@ def _print_status(json_output: bool) -> int:
 
 
 def _cmd_start(args) -> int:
-    status = _status_payload()
+    root = _root()
+    pid_file = _pid_file(root)
+    status = _status_payload(root)
     if status["running"]:
         print(f"Daemon already running (PID {status['pid']}).")
         return 0
-    if PID_FILE.exists():
+    if pid_file.exists():
         try:
-            PID_FILE.unlink()
+            pid_file.unlink()
         except OSError:
             pass
 
@@ -146,10 +151,10 @@ def _cmd_start(args) -> int:
         print(f"Error: daemon script not found: {script}", file=sys.stderr)
         return 1
 
-    root = _root()
     log_dir = os.path.join(root, "llm_intern_logs", "_daemon")
     os.makedirs(log_dir, exist_ok=True)
     env = _load_user_env(root)
+    env["FEISHU_DAEMON_ADDR_FILE"] = str(pid_file)
     python = _python_executable(env)
     if getattr(args, "foreground", False):
         os.execvpe(python, [python, script], env)
@@ -168,7 +173,7 @@ def _cmd_start(args) -> int:
     deadline = time.time() + 12
     last = {}
     while time.time() < deadline:
-        last = _status_payload()
+        last = _status_payload(root)
         if last["running"]:
             print(f"Daemon started (PID {last['pid']}).")
             print(f"  Log: {log_file}")
@@ -182,13 +187,15 @@ def _cmd_start(args) -> int:
 
 
 def _cmd_stop(_args) -> int:
-    payload = _pid_payload()
+    root = _root()
+    pid_file = _pid_file(root)
+    payload = _pid_payload(root)
     pid = int(payload.get("pid") or 0)
     http_ok, _, _ = _http_status(payload)
     if not pid and not http_ok:
-        if PID_FILE.exists():
+        if pid_file.exists():
             try:
-                PID_FILE.unlink()
+                pid_file.unlink()
             except OSError:
                 pass
         print("Daemon not running.")
@@ -212,9 +219,9 @@ def _cmd_stop(_args) -> int:
     if http_ok or (pid and _pid_is_running(pid)):
         print(f"Error: daemon PID {pid} did not stop.", file=sys.stderr)
         return 1
-    if PID_FILE.exists():
+    if pid_file.exists():
         try:
-            PID_FILE.unlink()
+            pid_file.unlink()
         except OSError:
             pass
     print(f"Daemon stopped (PID {pid}).")
@@ -231,7 +238,7 @@ def run(args) -> int:
     if cmd == "stop":
         return _cmd_stop(args)
     if cmd == "status":
-        return _print_status(bool(getattr(args, "json", False)))
+        return _print_status(bool(getattr(args, "json", False)), _root())
     if cmd == "restart":
         rc = _cmd_stop(args)
         if rc != 0:

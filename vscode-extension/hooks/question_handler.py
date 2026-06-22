@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _daemon_addr import get_daemon_http_url
 
 # DAEMON_BASE 是动态的（取决于 daemon 当前的 ephemeral 端口）——
-# 每次调用时重新读 /tmp/feishu_daemon.json。
+# 每次调用时通过 _daemon_addr 重新读当前用户/root 的 daemon address file。
 # 足够长的超时（6 小时），让主管有充足时间回复
 POLL_TIMEOUT = 6 * 3600
 POLL_INTERVAL = 2  # 秒

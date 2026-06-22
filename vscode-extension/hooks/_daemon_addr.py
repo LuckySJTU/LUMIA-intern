@@ -1,16 +1,27 @@
 """Shared helper to discover the running feishu daemon's HTTP/WS endpoints.
 
 The daemon now binds to ephemeral ports (not the legacy 18080/18081) and writes
-its actual ports to /tmp/feishu_daemon.json on startup. All hooks/CLI/extension
-that talk to the daemon MUST resolve the address through here.
+its actual ports to FEISHU_DAEMON_ADDR_FILE, or a per-user/work-root file under
+/tmp, on startup. All hooks/CLI/extension that talk to the daemon MUST resolve
+the address through here.
 
 If the daemon is not running, these functions raise FileNotFoundError. Callers
 should let it propagate (rule 6: no defensive fallback) so the failure is loud.
 """
+import hashlib
 import json
 import os
 
-PID_FILE = "/tmp/feishu_daemon.json"
+
+def _default_pid_file():
+    root = os.path.abspath(os.environ.get("WORK_AGENTS_ROOT") or os.getcwd())
+    getuid = getattr(os, "getuid", None)
+    uid = int(getuid()) if callable(getuid) else 0
+    digest = hashlib.sha1(root.encode("utf-8")).hexdigest()[:12]
+    return f"/tmp/feishu_daemon_{uid}_{digest}.json"
+
+
+PID_FILE = os.environ.get("FEISHU_DAEMON_ADDR_FILE") or _default_pid_file()
 
 
 def _read_pid_file():

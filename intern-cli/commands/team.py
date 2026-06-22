@@ -15,6 +15,7 @@ from pathlib import Path
 
 from commands import create as create_cmd
 from commands import delete as delete_cmd
+from lib.daemon_addr import daemon_addr_file
 from lib.git_ops import add_commit_push, get_default_branch, run_git
 from lib.intern_registry import get_intern, name_exists_in_repo
 from lib.team_registry import (
@@ -592,7 +593,7 @@ def _write_worker_task_docs(
 
 
 def _notify_worker_to_accept_task(*, project: str, lead_name: str, worker_name: str, task_id: str) -> dict[str, object]:
-    addr_path = os.environ.get("FEISHU_DAEMON_ADDR_FILE") or "/tmp/feishu_daemon.json"
+    addr_path = daemon_addr_file()
     with open(addr_path, "r", encoding="utf-8") as fp:
         port = int(json.load(fp)["http_port"])
     content = (
@@ -786,7 +787,7 @@ def _kill_tmux_session(intern_name: str) -> None:
 
 
 def _delete_feishu_group(intern_name: str) -> None:
-    addr_path = os.environ.get("FEISHU_DAEMON_ADDR_FILE") or "/tmp/feishu_daemon.json"
+    addr_path = daemon_addr_file()
     try:
         with open(addr_path, "r", encoding="utf-8") as fp:
             port = int(json.load(fp)["http_port"])

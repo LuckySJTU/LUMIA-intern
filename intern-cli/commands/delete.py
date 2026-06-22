@@ -9,6 +9,7 @@ import shutil
 import sys
 import urllib.request
 
+from lib.daemon_addr import daemon_addr_file
 from lib.intern_registry import (
     WORK_AGENTS_ROOT,
     get_intern,
@@ -106,7 +107,7 @@ def _clear_session_registry(*, name: str, project: str, workspace_id: str, enter
 
 
 def _delete_feishu_group(*, name: str, project: str) -> None:
-    addr_path = os.environ.get("FEISHU_DAEMON_ADDR_FILE") or "/tmp/feishu_daemon.json"
+    addr_path = daemon_addr_file()
     try:
         with open(addr_path, "r", encoding="utf-8") as fp:
             port = int(json.load(fp)["http_port"])

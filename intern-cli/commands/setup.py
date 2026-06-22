@@ -174,7 +174,12 @@ def run_enterprise_connect_relay(args: argparse.Namespace) -> int:
     raw_relay_http_url = str(args.relay_http_url or owner.get("relay_http_url") or "").strip()
     token = str(args.token or owner.get("relay_token") or "").strip()
     owner_mobile = str(args.owner_mobile or owner.get("mobile") or owner.get("owner_mobile") or "").strip()
-    owner_open_id = str(args.owner_open_id or owner.get("owner_open_id") or owner.get("open_id") or "").strip()
+    # If a mobile number is supplied for this run, do not reuse a previously
+    # cached open_id from another user. The daemon will resolve and persist the
+    # matching open_id at startup.
+    owner_open_id = str(args.owner_open_id or "").strip()
+    if not owner_open_id and not args.owner_mobile:
+        owner_open_id = str(owner.get("owner_open_id") or owner.get("open_id") or "").strip()
     if not raw_relay_url:
         print(json.dumps({
             "schema": "intern-agents.setup-connect-relay.v1",
@@ -248,6 +253,10 @@ def run_enterprise_connect_relay(args: argparse.Namespace) -> int:
         owner["mobile"] = owner_mobile
     if owner_open_id:
         owner["owner_open_id"] = owner_open_id
+        owner["open_id"] = owner_open_id
+    elif args.owner_mobile:
+        owner.pop("owner_open_id", None)
+        owner.pop("open_id", None)
     if getattr(args, "machine_id", None):
         owner["machine_id"] = str(args.machine_id).strip()
     owner.pop("relay_ws_port", None)

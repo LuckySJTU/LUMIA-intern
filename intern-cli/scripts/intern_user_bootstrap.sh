@@ -320,6 +320,19 @@ PY
   die "No supported Python found. This repo requires Python >= 3.10. Activate a suitable env or pass --python /path/to/python3.10+."
 }
 
+default_daemon_addr_file() {
+  "${PYTHON_BIN}" - "${WORK_ROOT}" <<'PY'
+import hashlib
+import os
+import sys
+
+root = os.path.abspath(sys.argv[1])
+uid = os.getuid() if hasattr(os, "getuid") else 0
+digest = hashlib.sha1(root.encode("utf-8")).hexdigest()[:12]
+print(f"/tmp/feishu_daemon_{uid}_{digest}.json")
+PY
+}
+
 require_command() {
   command -v "$1" >/dev/null 2>&1 || die "Required command not found: $1"
 }
@@ -653,7 +666,7 @@ PY
 }
 
 notify_daemon_intern_offline() {
-  local addr_file="${FEISHU_DAEMON_ADDR_FILE:-/tmp/feishu_daemon.json}"
+  local addr_file="${FEISHU_DAEMON_ADDR_FILE}"
   if [[ ! -f "${addr_file}" ]]; then
     warn "Daemon address file not found: ${addr_file}. Group light may remain stale."
     return 0
@@ -768,6 +781,9 @@ main() {
     PROJECT_NAME="$(default_project_name)"
   fi
   PYTHON_BIN="$(resolve_python)"
+  if [[ -z "${FEISHU_DAEMON_ADDR_FILE:-}" ]]; then
+    export FEISHU_DAEMON_ADDR_FILE="$(default_daemon_addr_file)"
+  fi
 
   if [[ "${ACTION}" == "stop" ]]; then
     stop_intern

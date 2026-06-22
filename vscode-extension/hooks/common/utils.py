@@ -321,7 +321,15 @@ def _has_enterprise_metadata_marker(state: dict) -> bool:
 
 
 def _daemon_bundle_dir() -> str:
-    pid_file = os.environ.get("FEISHU_DAEMON_ADDR_FILE") or "/tmp/feishu_daemon.json"
+    pid_file = os.environ.get("FEISHU_DAEMON_ADDR_FILE")
+    if not pid_file:
+        import hashlib
+
+        root = os.path.abspath(os.environ.get("WORK_AGENTS_ROOT") or os.getcwd())
+        getuid = getattr(os, "getuid", None)
+        uid = int(getuid()) if callable(getuid) else 0
+        digest = hashlib.sha1(root.encode("utf-8")).hexdigest()[:12]
+        pid_file = f"/tmp/feishu_daemon_{uid}_{digest}.json"
     try:
         with open(pid_file, "r", encoding="utf-8") as f:
             data = json.load(f)
